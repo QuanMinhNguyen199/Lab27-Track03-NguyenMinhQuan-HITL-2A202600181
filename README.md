@@ -80,7 +80,7 @@ Thresholds live in `common/schemas.py` (`AUTO_APPROVE_THRESHOLD = 0.73`, `ESCALA
 ├── .env.example
 │
 ├── common/                  # shared utilities — provided, don't modify
-│   ├── llm.py               # ChatOpenAI factory (OpenRouter)
+│   ├── llm.py               # ChatOllama factory (local or remote Ollama)
 │   ├── github.py            # httpx REST API client: fetch_pr / post_review_comment
 │   ├── db.py                # aiosqlite connection + write_audit_event
 │   └── schemas.py           # ReviewState (TypedDict) + PRAnalysis + AuditEntry (Pydantic)
@@ -100,10 +100,10 @@ Thresholds live in `common/schemas.py` (`AUTO_APPROVE_THRESHOLD = 0.73`, `ESCALA
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) package manager
-- An [OpenRouter](https://openrouter.ai/keys) API key (free tier has $1 credit)
+- [Ollama](https://ollama.ai) running locally (or a remote Ollama instance)
 - A GitHub Personal Access Token — see next section
 
-No Docker, no Postgres install, no `gh` CLI. The agent talks to GitHub directly via the REST API. Audit + checkpointer state both live in a single SQLite file (`./hitl_audit.db`) created automatically on first run.
+No Docker required for the lab itself, no Postgres install, no `gh` CLI. The agent talks to GitHub directly via the REST API and to Ollama for LLM inference. Audit + checkpointer state both live in a single SQLite file (`./hitl_audit.db`) created automatically on first run.
 
 ## Get a GitHub Personal Access Token (PAT)
 
@@ -133,7 +133,26 @@ The agent calls the GitHub REST API directly to **read PR diffs** and **post rev
 ```bash
 git clone <lab-repo-url> && cd Day27-Track3-HITL
 uv sync                                     # install Python deps
-cp .env.example .env && $EDITOR .env        # set OPENROUTER_API_KEY and GITHUB_TOKEN
+cp .env.example .env && $EDITOR .env        # set OLLAMA_BASE_URL, OLLAMA_MODEL, and GITHUB_TOKEN
+```
+
+### Ollama setup
+
+Make sure Ollama is running and has a model loaded:
+
+```bash
+# Start Ollama (if not already running)
+ollama serve
+
+# In another terminal, pull and run a model (e.g., llama2, mistral, neural-chat)
+ollama pull llama2
+```
+
+Then in `.env`, set:
+
+```bash
+OLLAMA_BASE_URL=http://localhost:11434   # or your remote Ollama instance
+OLLAMA_MODEL=llama2                       # or any model you have pulled
 ```
 
 The SQLite file `hitl_audit.db` is created on demand when exercise 4 runs.

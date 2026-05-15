@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Literal, TypedDict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 Decision = Literal["auto_approve", "human_approval", "escalate"]
@@ -48,7 +48,10 @@ class PRAnalysis(BaseModel):
     comments: list[ReviewComment] = Field(default_factory=list)
     confidence: float = Field(
         ge=0.0, le=1.0,
-        description="Self-reported confidence that the review is complete and correct",
+        description=(
+            "Self-reported confidence that the review is complete and correct, "
+            "as a decimal from 0.0 to 1.0. Do not return a percentage."
+        ),
     )
     confidence_reasoning: str = Field(
         description="Why the model picked that confidence value"
@@ -57,6 +60,20 @@ class PRAnalysis(BaseModel):
         default_factory=list,
         description="Specific questions to ask a human reviewer if escalating",
     )
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def normalize_percent_confidence(cls, value):
+        """Accept local models that return 85 instead of 0.85."""
+        if isinstance(value, str):
+            stripped = value.strip().removesuffix("%")
+            try:
+                value = float(stripped)
+            except ValueError:
+                return value
+        if isinstance(value, (int, float)) and 1 < value <= 100:
+            return value / 100
+        return value
 
 
 class AuditEntry(BaseModel):

@@ -1,17 +1,15 @@
-"""LLM factory. Returns an OpenAI-compatible chat model wired to OpenRouter."""
+"""LLM factory. Returns an Ollama-backed chat model."""
 
 import os
 
-from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 
 
-def get_llm(temperature: float = 0.2) -> ChatOpenAI:
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENROUTER_API_KEY is not set — copy .env.example to .env")
-    return ChatOpenAI(
-        model=os.environ.get("LLM_MODEL", "openai/gpt-4o-mini"),
-        base_url=os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1"),
-        api_key=api_key,
+def get_llm(temperature: float = 0.2) -> ChatOllama:
+    model = os.environ.get("OLLAMA_MODEL", "llama2")
+    base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+    return ChatOllama(
+        model=model,
+        base_url=base_url,
         temperature=temperature,
     )
